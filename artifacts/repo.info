@@ -1,0 +1,14 @@
+repo ./.git
+  branch interop-mem at 777c100d57689abd1ba1989e1b169775c216a787
+  remotes:
+    origin git@gitee.com:kprokopenko/arkcompiler_runtime_core.git
+    upstream git@gitee.com:openharmony-sig/arkcompiler_runtime_core.git
+repo ./plugins/ecmascript/es2panda/.git
+  branch master at c1d00949881749bd35f770ad7ec18d3ec2abbe6d
+  remotes:
+    origin https://gitee.com/openharmony-sig/arkcompiler_ets_frontend.git
+repo ./plugins/ecmascript/.git
+  branch interop-mem at 177bafaf6db23f9b51421005c0be272b4c1c7454
+  remotes:
+    origin git@gitee.com:kprokopenko/arkcompiler_ets_runtime.git
+    upstream https://gitee.com/openharmony-sig/arkcompiler_ets_runtime.git
