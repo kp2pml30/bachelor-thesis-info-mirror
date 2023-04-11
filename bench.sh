@@ -59,7 +59,7 @@ do
 
 	echo "=== ark ==="
 	echo ', "ark": ' >> "$BENCHOUT"
-	"$PANDA_BUILD/bin/ark" --interpreter-type=cpp --gc-type=stw --load-runtimes=ecmascript "$bench/ark.abc" _GLOBAL::func_main_0 >> "$BENCHOUT"
+	"$PANDA_BUILD/bin/ark" --interpreter-type=cpp --gc-type=g1-gc --load-runtimes=ecmascript "$bench/ark.abc" _GLOBAL::func_main_0 >> "$BENCHOUT"
 
 	echo "=== ark-interop ==="
 	pushd "$bench" 2>&1 > /dev/null
@@ -67,7 +67,7 @@ do
 	"$PANDA_BUILD/bin/ark" \
 		--interpreter-type=cpp \
 		--runtime-type=ets \
-		--gc-type=stw \
+		--gc-type=g1-gc \
 		--load-runtimes=ets:ecmascript \
 		"--boot-panda-files=$PANDA_BUILD/plugins/ets/etsstdlib.abc:$PANDA_BUILD/plugins/ets/etsinterop.abc:$PANDA_BUILD/plugins/ets/etsinterop1.abc:$PANDA_BUILD/plugins/ets/etsinterop_stub.abc" \
 		"drivers/ets.abc" ETSGLOBAL::main \
@@ -75,18 +75,18 @@ do
 			>> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
+	#echo "=== nashorn ==="
+	#echo ', "nashorn": ' >> "$BENCHOUT"
+	#jjs --language=es6 "$bench/nashorn.js" >> "$BENCHOUT"
+
 	echo "=== nashorn ==="
 	echo ', "nashorn": ' >> "$BENCHOUT"
-	jjs --language=es6 "$bench/nashorn.js" >> "$BENCHOUT"
-
-	echo "=== nashorn ot false ==="
-	echo ', "nashorn-no-ot": ' >> "$BENCHOUT"
 	jjs --language=es6 -ot=false "$bench/nashorn.js" >> "$BENCHOUT"
 
 	echo "=== nashorn-interop ==="
 	echo ', "nashorn-i": ' >> "$BENCHOUT"
 	pushd "$bench/drivers" 2>&1 > /dev/null
-	java -Dnashorn.args=--language=es6 Nashorn >> "$BENCHOUT"
+	java -Dnashorn.args="--language=es6 -ot=false" Nashorn >> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
 	echo "=== graal ==="

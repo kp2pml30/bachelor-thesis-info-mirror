@@ -25,7 +25,7 @@ then
 		-G Ninja
 fi
 
-cmake --build "$PANDA_BUILD" --target ark --target es2panda --target etsstdlib
+cmake --build "$PANDA_BUILD" --target es2panda --target etsstdlib
 
 mkdir -p hidden/benchs
 
@@ -60,3 +60,5 @@ do
 	javac "$outp/drivers/Nashorn.java"
 	"$GRAAL/javac" "$outp/drivers/Graal.java"
 done
+
+cmake --build "$PANDA_BUILD" --target ark
