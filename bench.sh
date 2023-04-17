@@ -91,7 +91,7 @@ do
 
 	echo "=== graal ==="
 	echo ', "graal": ' >> "$BENCHOUT"
-	"$GRAAL/js" "$bench/graal.js" >> "$BENCHOUT"
+	"$GRAAL/js" --jvm "$bench/graal.js" >> "$BENCHOUT"
 
 	echo "=== graal-interop ==="
 	pushd "$bench/drivers" 2>&1 > /dev/null

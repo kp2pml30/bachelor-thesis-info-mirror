@@ -54,8 +54,8 @@ do
 		erb "mode=$name" 'interop=true' "$i/src.js.erb" > "$outp/$name.interop.js"
 	done
 
-	"$PANDA_BUILD/bin/es2panda" --extension=js --output "$outp/ark.abc" "$outp/ark.js"
-	"$PANDA_BUILD/bin/es2panda" --extension=js --output "$outp/ark.interop.abc" "$outp/ark.interop.js"
+	"$PANDA_BUILD/bin/es2panda" --opt-level=2 --extension=js --output "$outp/ark.abc" "$outp/ark.js"
+	"$PANDA_BUILD/bin/es2panda" --opt-level=2 --extension=js --output "$outp/ark.interop.abc" "$outp/ark.interop.js"
 	"$PANDA_BUILD/bin/es2panda" "--arktsconfig=hidden/arktsconfig.json" --extension=ets --output "$outp/drivers/ets.abc" "$outp/drivers/ets.ets"
 	javac "$outp/drivers/Nashorn.java"
 	"$GRAAL/javac" "$outp/drivers/Graal.java"
