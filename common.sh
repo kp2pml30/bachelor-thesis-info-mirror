@@ -14,16 +14,17 @@ function verifyFile {
 }
 
 echo "panda root: $PANDA_ROOT"
-
-verifyFile "$PANDA_ROOT" "plugins/ecmascript/compiler/ecmascript_foreign_objects_type_resolving.cpp"
-
 echo "panda build: $PANDA_BUILD"
-
-verifyFile "$PANDA_BUILD" "bin/ark" "bin/es2panda"
-
 echo "graal root: $GRAAL"
-
-verifyFile "$GRAAL" "js"
 
 PANDA_ROOT="$(readlink -f -- "$PANDA_ROOT")"
 PANDA_BUILD="$(readlink -f -- "$PANDA_BUILD")"
+
+verifyFile "$PANDA_ROOT" "libpandabase/interop/common.h"
+verifyFile "$PANDA_ROOT" "plugins/ecmascript/compiler/optimizer/interop/ecmascript_foreign_objects_type_resolving.cpp"
+verifyFile "$GRAAL" "js"
+
+function verifyRoots {
+	verifyFile "$PANDA_BUILD" "bin/ark" "bin/es2panda"
+}
+

@@ -6,7 +6,7 @@ import javax.script.*;
 import jdk.nashorn.api.scripting.*;
 
 public class Nashorn {
-	public static class Body {
+	public static final class Body {
 		public double x;
 		public double y;
 		public double z;
@@ -37,11 +37,9 @@ public class Nashorn {
 	}
 	public static void main(String[] args) throws Exception {
 		ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-		/*String script = new String(Files.readAllBytes(Paths.get("nashorn.interop.js")), StandardCharsets.UTF_8);*/
 
-		engine.eval(new FileReader("../nashorn.interop.js"));
+		engine.eval(new FileReader("../" + args[0]));
 		ScriptObjectMirror glb = (ScriptObjectMirror)engine.eval("this");
-		//Invocable fun = (Invocable)glb.getMember("run");
 		glb.callMember("run");
 	}
 }

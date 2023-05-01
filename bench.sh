@@ -2,6 +2,8 @@
 
 source ./common.sh
 
+verifyRoots
+
 mkdir -p artifacts
 
 function repr {
@@ -55,23 +57,31 @@ do
 	echo "=== node ==="
 	
 	echo '"node": ' >> "$BENCHOUT"
-	node "$bench/node.js" >> "$BENCHOUT"
+	# --print-opt-code 
+	node --no-turbo-inlining "$bench/node.js" >> "$BENCHOUT"
 
 	echo "=== ark ==="
 	echo ', "ark": ' >> "$BENCHOUT"
 	"$PANDA_BUILD/bin/ark" --interpreter-type=cpp --gc-type=g1-gc --load-runtimes=ecmascript "$bench/ark.abc" _GLOBAL::func_main_0 >> "$BENCHOUT"
 
-	echo "=== ark-interop ==="
 	pushd "$bench" 2>&1 > /dev/null
-	echo ', "ark-i": ' >> "$BENCHOUT"
+	echo "=== ark-int ==="
+	echo ', "ark-int": ' >> "$BENCHOUT"
 	"$PANDA_BUILD/bin/ark" \
 		--interpreter-type=cpp \
 		--runtime-type=ets \
-		--gc-type=g1-gc \
 		--load-runtimes=ets:ecmascript \
 		"--boot-panda-files=$PANDA_BUILD/plugins/ets/etsstdlib.abc:$PANDA_BUILD/plugins/ets/etsinterop.abc:$PANDA_BUILD/plugins/ets/etsinterop1.abc:$PANDA_BUILD/plugins/ets/etsinterop_stub.abc" \
-		"drivers/ets.abc" ETSGLOBAL::main \
-			| sed -e 's/deoptimziations count\s*[0-9]*//g' \
+		"drivers/ets.abc" ETSGLOBAL::main -- "ark.interop.abc" \
+			>> "$BENCHOUT"
+	echo "=== ark-int-arr ==="
+	echo ', "ark-int-arr": ' >> "$BENCHOUT"
+	"$PANDA_BUILD/bin/ark" \
+		--interpreter-type=cpp \
+		--runtime-type=ets \
+		--load-runtimes=ets:ecmascript \
+		"--boot-panda-files=$PANDA_BUILD/plugins/ets/etsstdlib.abc:$PANDA_BUILD/plugins/ets/etsinterop.abc:$PANDA_BUILD/plugins/ets/etsinterop1.abc:$PANDA_BUILD/plugins/ets/etsinterop_stub.abc" \
+		"drivers/ets.abc" ETSGLOBAL::main -- "ark.interop.array.abc" \
 			>> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
@@ -83,20 +93,26 @@ do
 	echo ', "nashorn": ' >> "$BENCHOUT"
 	jjs --language=es6 -ot=false "$bench/nashorn.js" >> "$BENCHOUT"
 
-	echo "=== nashorn-interop ==="
-	echo ', "nashorn-i": ' >> "$BENCHOUT"
 	pushd "$bench/drivers" 2>&1 > /dev/null
-	java -Dnashorn.args="--language=es6 -ot=false" Nashorn >> "$BENCHOUT"
+	echo "=== nashorn-int ==="
+	echo ', "nashorn-int": ' >> "$BENCHOUT"
+	java -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.js" >> "$BENCHOUT"
+	echo "=== nashorn-int-arr ==="
+	echo ', "nashorn-int-arr": ' >> "$BENCHOUT"
+	java -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.array.js" >> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
 	echo "=== graal ==="
 	echo ', "graal": ' >> "$BENCHOUT"
 	"$GRAAL/js" --jvm "$bench/graal.js" >> "$BENCHOUT"
 
-	echo "=== graal-interop ==="
 	pushd "$bench/drivers" 2>&1 > /dev/null
-	echo ', "graal-i": ' >> "$BENCHOUT"
-	"$GRAAL/java" Graal >> "$BENCHOUT"
+	echo "=== graal-int ==="
+	echo ', "graal-int": ' >> "$BENCHOUT"
+	"$GRAAL/java" Graal "graal.interop.js" >> "$BENCHOUT"
+	echo "=== graal-int-arr ==="
+	echo ', "graal-int-arr": ' >> "$BENCHOUT"
+	"$GRAAL/java" Graal "graal.interop.array.js" >> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
 	echo "}" >> "$BENCHOUT"

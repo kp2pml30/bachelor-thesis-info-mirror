@@ -27,21 +27,21 @@
 % require_relative '../../common'
 "use strict";
 
-<%= init(mode) %>
+<%= init(mode, interop, array) %>
 
 const myPrint = typeof print === 'undefined' ? console.log : print;
 
-const doBench = (iter) => {
-	const start = <%= TIME() %>;
 
-	const PI = 3.141592653589793;
-	const SOLAR_MASS = 4 * PI * PI;
-	const DAYS_PER_YEAR = 365.24;
+const PI = 3.141592653589793;
+const SOLAR_MASS = 4 * PI * PI;
+const DAYS_PER_YEAR = 365.24;
 
 % if interop == 'true'
 	const Body = <%= findClass('Body') %>
+	const BodyArray = <%= findArray('Body') %>
 % else
 	<%= CLASS_BEGIN 'Body' %>(x, y, z, vx, vy, vz, mass) {
+			this.plsGenericShape = {x: x, y: y}
 			this.x = x;
 			this.y = y;
 			this.z = z;
@@ -58,6 +58,74 @@ const doBench = (iter) => {
 		}
 	<%= CLASS_END() %>
 % end
+
+<%= CLASS_BEGIN 'NBodySystem' %>(bodies) {
+		this.bodies = bodies;
+		let px = 0.0;
+		let py = 0.0;
+		let pz = 0.0;
+		let size = this.bodies.length;
+		for (let i = 0; i < size; i++) {
+			let b = this.bodies[i];
+			let m = b.mass;
+			px += b.vx * m;
+			py += b.vy * m;
+			pz += b.vz * m;
+		}
+		this.bodies[0].offsetMomentum(px, py, pz);
+	}
+
+	<%= CLASS_METHOD 'advance' %>(dt) {
+		const bodies = this.bodies
+		const size = bodies.length;
+		for (let i = 0; i < size; i++) {
+			const bodyi = bodies[i];
+			for (let j = i + 1; j < size; j++) {
+				const bodyj = bodies[j];
+				const dx = bodyi.x - bodyj.x;
+				const dy = bodyi.y - bodyj.y;
+				const dz = bodyi.z - bodyj.z;
+				const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+				const mag = dt / (distance * distance * distance);
+				bodyi.vx -= dx * bodyj.mass * mag;
+				bodyi.vy -= dy * bodyj.mass * mag;
+				bodyi.vz -= dz * bodyj.mass * mag;
+				bodyj.vx += dx * bodyi.mass * mag;
+				bodyj.vy += dy * bodyi.mass * mag;
+				bodyj.vz += dz * bodyi.mass * mag;
+			}
+		}
+		for (let i = 0; i < size; i++) {
+			const body = bodies[i];
+			body.x += dt * body.vx;
+			body.y += dt * body.vy;
+			body.z += dt * body.vz;
+		}
+	}
+	<%= CLASS_METHOD 'energy' %>() {
+		let e = 0.0;
+		let size = this.bodies.length;
+		for (let i = 0; i < size; i++) {
+			const bodyi = this.bodies[i];
+			e += 0.5 * bodyi.mass *
+				(bodyi.vx * bodyi.vx +
+					bodyi.vy * bodyi.vy +
+					bodyi.vz * bodyi.vz);
+			for (let j = i + 1; j < size; j++) {
+				const bodyj = this.bodies[j];
+				const dx = bodyi.x - bodyj.x;
+				const dy = bodyi.y - bodyj.y;
+				const dz = bodyi.z - bodyj.z;
+				const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+				e -= (bodyi.mass * bodyj.mass) / distance;
+			}
+		}
+		return e;
+	}
+<%= CLASS_END() %>
+
+const doBench = (i) => {
+	const start = <%= TIME() %>;
 
 	function Jupiter() {
 		return new Body(
@@ -111,86 +179,16 @@ const doBench = (iter) => {
 		return new Body(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, SOLAR_MASS);
 	}
 
-	<%= CLASS_BEGIN 'NBodySystem' %>(bodies) {
-			this.bodies = bodies;
-			let px = 0.0;
-			let py = 0.0;
-			let pz = 0.0;
-			let size = this.bodies.length;
-			for (let i = 0; i < size; i++) {
-				let b = this.bodies[i];
-				let m = b.mass;
-				px += b.vx * m;
-				py += b.vy * m;
-				pz += b.vz * m;
-			}
-			this.bodies[0].offsetMomentum(px, py, pz);
-		}
-
-		<%= CLASS_METHOD 'advance' %>(dt) {
-			let dx, dy, dz, distance, mag;
-			const bodies = this.bodies
-			let size = bodies.length;
-			for (let i = 0; i < size; i++) {
-				let bodyi = bodies[i];
-				for (let j = i + 1; j < size; j++) {
-					let bodyj = bodies[j];
-					dx = bodyi.x - bodyj.x;
-					dy = bodyi.y - bodyj.y;
-					dz = bodyi.z - bodyj.z;
-					distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-					mag = dt / (distance * distance * distance);
-					bodyi.vx -= dx * bodyj.mass * mag;
-					bodyi.vy -= dy * bodyj.mass * mag;
-					bodyi.vz -= dz * bodyj.mass * mag;
-					bodyj.vx += dx * bodyi.mass * mag;
-					bodyj.vy += dy * bodyi.mass * mag;
-					bodyj.vz += dz * bodyi.mass * mag;
-				}
-			}
-			for (let i = 0; i < size; i++) {
-				let body = bodies[i];
-				body.x += dt * body.vx;
-				body.y += dt * body.vy;
-				body.z += dt * body.vz;
-			}
-		}
-		<%= CLASS_METHOD 'energy' %>() {
-			let dx, dy, dz, distance;
-			let e = 0.0;
-			let size = this.bodies.length;
-			for (let i = 0; i < size; i++) {
-				let bodyi = this.bodies[i];
-				e += 0.5 * bodyi.mass *
-					(bodyi.vx * bodyi.vx +
-						bodyi.vy * bodyi.vy +
-						bodyi.vz * bodyi.vz);
-				for (let j = i + 1; j < size; j++) {
-					let bodyj = this.bodies[j];
-					dx = bodyi.x - bodyj.x;
-					dy = bodyi.y - bodyj.y;
-					dz = bodyi.z - bodyj.z;
-					distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-					e -= (bodyi.mass * bodyj.mass) / distance;
-				}
-			}
-			return e;
-		}
-	<%= CLASS_END() %>
 	let ret = 0;
 	for (let n = 3; n <= 24; n *= 2) {
-		(function SystemStep() {
-			let bodies = new NBodySystem(Array(
-				Sun(), Jupiter(), Saturn(), Uranus(), Neptune()
-			));
-			let max = n * 250 + iter % 3;
+		const bodies = new NBodySystem(<%= ARRAY('Body', ['Sun()', 'Jupiter()', 'Saturn()', 'Uranus()', 'Neptune()']) %>);
+		const max = n * 250 + i % 30;
 
-			ret += bodies.energy();
-			for (let i = 0; i < max; i++) {
-				bodies.advance(0.01);
-			}
-			ret += bodies.energy();
-		})();
+		ret += bodies.energy();
+		for (let i = 0; i < max; i++) {
+			bodies.advance(0.01);
+		}
+		ret += bodies.energy();
 	}
 	//let expected = -1.3524862408537381;
 	//if (ret != expected)
@@ -205,7 +203,7 @@ const doBench = (iter) => {
 };
 
 this.run = () => {
-	const ITERS = 500;
+	const ITERS = 1000;
 
 	const dumpResult = {
 		total: 0,

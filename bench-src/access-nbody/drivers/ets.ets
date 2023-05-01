@@ -31,9 +31,9 @@ class Body {
 }
 
 
-function main(): void {
+function main(args: String[]): void {
 	const eng = ScriptVM.create("ecmascript")
-	const obj = eng.load("ark.interop.abc")
+	const obj = eng.load(args[0])
 	const fn = asScriptObject(eng.getObjectProperty(obj, "run"))
 	eng.invoke(fn)
 	eng.destroy()

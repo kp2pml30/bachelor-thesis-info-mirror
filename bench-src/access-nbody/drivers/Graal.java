@@ -6,7 +6,7 @@ import javax.script.*;
 import org.graalvm.polyglot.*;
 
 public class Graal {
-	public static class Body {
+	public static final class Body {
 		public double x;
 		public double y;
 		public double z;
@@ -40,7 +40,7 @@ public class Graal {
 			.allowAllAccess(true)
 			.build();
 
-		context.eval("js", new String(Files.readAllBytes(Paths.get("../graal.interop.js")), StandardCharsets.UTF_8));
+		context.eval("js", new String(Files.readAllBytes(Paths.get("../" + args[0])), StandardCharsets.UTF_8));
 		Value glb = context.eval("js", "this");
 		//Invocable fun = (Invocable)glb.getMember("run");
 		glb.invokeMember("run");

@@ -25,17 +25,22 @@ then
 		-G Ninja
 fi
 
+# -DPANDA_ENABLE_LTO=true \
+# -DPANDA_ARKBASE_LTO=true \
+
 cmake --build "$PANDA_BUILD" --target es2panda --target etsstdlib
 
 mkdir -p hidden/benchs
 
 cat <<EOF > hidden/arktsconfig.json
 {
-	"baseUrl": "$PANDA_ROOT",
-	"paths": {
-		"std": "$PANDA_ROOT/plugins/ets/stdlib/std",
-		"panda": "$PANDA_ROOT/plugins/ets/stdlib/panda"
-  }
+	"compilerOptions": {
+		"baseUrl": "$PANDA_ROOT",
+		"paths": {
+			"std": ["$PANDA_ROOT/plugins/ets/stdlib/std"],
+			"panda": ["$PANDA_ROOT/plugins/ets/stdlib/panda"]
+		}
+	}
 }
 EOF
 
@@ -50,15 +55,19 @@ do
 	cp -r "$i/drivers" "$outp"
 	for name in ${modes[*]}
 	do
-		erb "mode=$name" 'interop=false' "$i/src.js.erb" > "$outp/$name.js"
-		erb "mode=$name" 'interop=true' "$i/src.js.erb" > "$outp/$name.interop.js"
+		erb "mode=$name" 'interop=false' 'array=false' "$i/src.js.erb" > "$outp/$name.js"
+		erb "mode=$name" 'interop=true' 'array=false' "$i/src.js.erb" > "$outp/$name.interop.js"
+		erb "mode=$name" 'interop=true' 'array=true' "$i/src.js.erb" > "$outp/$name.interop.array.js"
 	done
 
 	"$PANDA_BUILD/bin/es2panda" --opt-level=2 --extension=js --output "$outp/ark.abc" "$outp/ark.js"
 	"$PANDA_BUILD/bin/es2panda" --opt-level=2 --extension=js --output "$outp/ark.interop.abc" "$outp/ark.interop.js"
+	"$PANDA_BUILD/bin/es2panda" --opt-level=2 --extension=js --output "$outp/ark.interop.array.abc" "$outp/ark.interop.array.js"
 	"$PANDA_BUILD/bin/es2panda" "--arktsconfig=hidden/arktsconfig.json" --extension=ets --output "$outp/drivers/ets.abc" "$outp/drivers/ets.ets"
 	javac "$outp/drivers/Nashorn.java"
 	"$GRAAL/javac" "$outp/drivers/Graal.java"
 done
 
 cmake --build "$PANDA_BUILD" --target ark
+
+verifyRoots

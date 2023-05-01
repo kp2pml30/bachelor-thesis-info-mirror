@@ -1,6 +1,8 @@
 require 'stringio'
-def init(mode)
+def init(mode, interop, array)
 	$mode = mode
+	$interop = interop == 'true'
+	$array = array == 'true'
 	out = StringIO.new
 	if mode == 'node'
 	elsif mode == 'ark'
@@ -13,7 +15,7 @@ end
 
 def findClassGlobal(name)
 	if $mode == 'ark'
-		"Interop.findClass(\"L#{name};\")"
+		"Interop.findClass(\"#{name}\")"
 	elsif $mode == 'nashorn'
 		"Java.type(\"#{name}\")"
 	elsif $mode == 'graal'
@@ -23,9 +25,14 @@ def findClassGlobal(name)
 	end
 end
 
+def findArray(name)
+	return findClass('[]' + name) if $mode == 'ark'
+	return findClass(name + '[]')
+end
+
 def findClass(name)
 	if $mode == 'ark'
-		"Interop.findClass(\"L#{name};\")"
+		"Interop.findClass(\"#{name}\")"
 	elsif $mode == 'nashorn'
 		"Java.type(\"Nashorn$#{name}\")"
 	elsif $mode == 'graal'
@@ -36,6 +43,17 @@ def findClass(name)
 end
 
 $class = nil
+
+def ARRAY(name, elems)
+	count = elems.size
+	return "Array(#{elems.join(',')})" if not $interop or not $array
+	return "new #{name}Array(#{count}#{elems.map { |e| ", #{e}"}.join('')})" if $mode == 'ark'
+	out = StringIO.new
+	out << "(() => { const __c = new #{name}Array(#{count});"
+	elems.each_with_index{ |e, i| out << "__c[#{i}] = #{e};" }
+	out << "return __c;})()"
+	return out.string
+end
 
 def CLASS_BEGIN(name)
 	raise unless $class == nil
