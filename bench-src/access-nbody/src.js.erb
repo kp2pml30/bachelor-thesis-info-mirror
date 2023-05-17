@@ -203,7 +203,7 @@ const doBench = (i) => {
 };
 
 this.run = () => {
-	const ITERS = 1000;
+	const ITERS = 2000;
 
 	const dumpResult = {
 		total: 0,
@@ -215,7 +215,7 @@ this.run = () => {
 	const startTotal = <%= TIME() %>;
 	for (let i = 0; i < ITERS; i++) {
 		const r = doBench(i);
-		if (i > ITERS * 0.8) {
+		if (i > ITERS * 0.9) {
 			dumpResult.times.push(r.time);
 		}
 		dumpResult.sum += r.val;
