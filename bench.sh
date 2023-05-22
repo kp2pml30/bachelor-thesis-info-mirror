@@ -2,6 +2,8 @@
 
 source ./common.sh
 
+#set -x
+
 verifyRoots
 
 mkdir -p artifacts
@@ -51,23 +53,54 @@ mkdir -p "$CUR_DIR/artifacts/benchs/"
 
 for bench in hidden/benchs/*
 do
+	echo "### benchmarking $(basename -- "$bench")"
+
 	BENCHOUT="$CUR_DIR/artifacts/benchs/$(basename -- "$bench").json"
 	echo "{" > "$BENCHOUT"
+
+	source bench.env
+	COM="bench-src/$(basename -- "$bench")/bench.env"
+	if [ -f "$COM"  ]
+	then
+		source "$COM"
+	fi
+
+mapOpts () {
+	echo "$2" | sed 's/ /\n/g' | sed "s/^/$1/g" | tr '\n' ' '
+}
+
+	if [ "$JIT" = true ]
+	then
+		ARK_OPTS=""
+		JVM_OPTS=""
+		JJS_OPTS=""
+		NODE_OPTS=""
+		GRAAL_OPTS=""
+		GRAAL_JVM_OPTS=""
+	else
+		NODE_OPTS="--jitless --no-opt"
+		ARK_OPTS="--compiler-enable-jit=false"
+		JVM_OPTS="-Djava.compiler=NONE -Xint"
+		JJS_OPTS="$(mapOpts "-J" "$JVM_OPTS")"
+		GRAAL_OPTS=""
+		GRAAL_JVM_OPTS=""
+	fi
 
 	echo "=== node ==="
 	
 	echo '"node": ' >> "$BENCHOUT"
 	# --print-opt-code 
-	node --no-turbo-inlining "$bench/node.js" >> "$BENCHOUT"
+	node $NODE_OPTS "$bench/node.js" >> "$BENCHOUT"
 
 	echo "=== ark ==="
 	echo ', "ark": ' >> "$BENCHOUT"
-	"$PANDA_BUILD/bin/ark" --interpreter-type=cpp --gc-type=g1-gc --load-runtimes=ecmascript "$bench/ark.abc" _GLOBAL::func_main_0 >> "$BENCHOUT"
+	"$PANDA_BUILD/bin/ark" $ARK_OPTS --interpreter-type=cpp --gc-type=g1-gc --load-runtimes=ecmascript "$bench/ark.abc" _GLOBAL::func_main_0 >> "$BENCHOUT"
 
 	pushd "$bench" 2>&1 > /dev/null
 	echo "=== ark-int ==="
 	echo ', "ark-int": ' >> "$BENCHOUT"
 	"$PANDA_BUILD/bin/ark" \
+		$ARK_OPTS \
 		--interpreter-type=cpp \
 		--runtime-type=ets \
 		--load-runtimes=ets:ecmascript \
@@ -77,6 +110,7 @@ do
 	echo "=== ark-int-arr ==="
 	echo ', "ark-int-arr": ' >> "$BENCHOUT"
 	"$PANDA_BUILD/bin/ark" \
+		$ARK_OPTS \
 		--interpreter-type=cpp \
 		--runtime-type=ets \
 		--load-runtimes=ets:ecmascript \
@@ -85,34 +119,30 @@ do
 			>> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
-	#echo "=== nashorn ==="
-	#echo ', "nashorn": ' >> "$BENCHOUT"
-	#jjs --language=es6 "$bench/nashorn.js" >> "$BENCHOUT"
-
 	echo "=== nashorn ==="
 	echo ', "nashorn": ' >> "$BENCHOUT"
-	jjs --language=es6 -ot=false "$bench/nashorn.js" >> "$BENCHOUT"
+	jjs $JJS_OPTS --language=es6 -ot=false "$bench/nashorn.js" >> "$BENCHOUT"
 
 	pushd "$bench/drivers" 2>&1 > /dev/null
 	echo "=== nashorn-int ==="
 	echo ', "nashorn-int": ' >> "$BENCHOUT"
-	java -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.js" >> "$BENCHOUT"
+	java $JVM_OPTS -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.js" >> "$BENCHOUT"
 	echo "=== nashorn-int-arr ==="
 	echo ', "nashorn-int-arr": ' >> "$BENCHOUT"
-	java -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.array.js" >> "$BENCHOUT"
+	java $JVM_OPTS -Dnashorn.args="--language=es6 -ot=false" Nashorn "nashorn.interop.array.js" >> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
 	echo "=== graal ==="
 	echo ', "graal": ' >> "$BENCHOUT"
-	"$GRAAL/js" --jvm "$bench/graal.js" >> "$BENCHOUT"
+	"$GRAAL/js" --jvm $GRAAL_OPTS "$bench/graal.js" >> "$BENCHOUT"
 
 	pushd "$bench/drivers" 2>&1 > /dev/null
 	echo "=== graal-int ==="
 	echo ', "graal-int": ' >> "$BENCHOUT"
-	"$GRAAL/java" Graal "graal.interop.js" >> "$BENCHOUT"
+	"$GRAAL/java" $GRAAL_JVM_OPTS Graal "graal.interop.js" >> "$BENCHOUT"
 	echo "=== graal-int-arr ==="
 	echo ', "graal-int-arr": ' >> "$BENCHOUT"
-	"$GRAAL/java" Graal "graal.interop.array.js" >> "$BENCHOUT"
+	"$GRAAL/java" $GRAAL_JVM_OPTS Graal "graal.interop.array.js" >> "$BENCHOUT"
 	popd 2>&1 > /dev/null
 
 	echo "}" >> "$BENCHOUT"

@@ -11,7 +11,7 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-for filename in glob.iglob('../artifacts/benchs/*.json'):
+for filename in glob.iglob('artifacts/benchs/*.json'):
 	if not os.path.isfile(filename):
 		continue
 	print(filename)
@@ -109,5 +109,5 @@ for filename in glob.iglob('../artifacts/benchs/*.json'):
 		# plt.arrow(*list(real_begin), *list(real_dir), head_width=0.1)
 		plt.annotate("", xy=real_end, xytext=real_begin, arrowprops=dict(arrowstyle="->", color='red'))
 	#plt.gca().set_position([0, 0, 1, 1])
-	plt.savefig(f'aaa.png', format='png')
+	#plt.savefig(f'aaa.png', format='png')
 	plt.show()
