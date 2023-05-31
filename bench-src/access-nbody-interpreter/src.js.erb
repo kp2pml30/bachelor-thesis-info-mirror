@@ -212,9 +212,9 @@ this.run = () => {
 	}
 
 	const startTotal = <%= TIME() %>;
-  for (let i = 0; i < <%= mode == 'graal' ? 1 : 5 %>; i++) {
+	for (let i = 0; i < <%= mode == 'graal' ? 1 : 50 %>; i++) {
 		const r = doBench(i);
-    dumpResult.times.push(r.time);
+		dumpResult.times.push(r.time);
 		dumpResult.sum += r.val;
 		dumpResult.res.push(r.val)
 	}
